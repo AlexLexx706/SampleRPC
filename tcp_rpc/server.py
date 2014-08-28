@@ -12,12 +12,14 @@ logger = logging.getLogger(__name__)
 #потоковый сервер
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     class MyTCPHandler(SocketServer.BaseRequestHandler):
+        class EndConnection(Exception): pass
+        
         def read(self, size):
             res_buffer = ""
             while len(res_buffer) < size:
                 b = self.request.recv(size - len(res_buffer))
                 if len(b) == 0:
-                    raise socket.error("end connection")
+                    raise self.EndConnection()
                 res_buffer += b
             return res_buffer
             
@@ -26,20 +28,22 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
                 logger.debug("handle(self:{}) ->".format(self))
                 while 1:
                     try:
-                        buffer = self.read(2)
-                        size = struct.unpack("<H", buffer)[0]
+                        buffer = self.read(4)
+                        size = struct.unpack("<L", buffer)[0]
                         cmd, params = msgpack.unpackb(self.read(size), encoding='utf-8')
 
                         if self.server.instance is None:
                             packet = msgpack.packb((1, params))
                         else:
                             try:
-                                packet = msgpack.packb((0, getattr(self.server.instance, cmd)(*params)))
+                                packet = msgpack.packb((0, getattr(self.server.instance, cmd)(*params)), use_bin_type=True)
                             except:
                                 result = traceback.format_exc()
                                 logger.error(result)
-                                packet = msgpack.packb((2, result))
-                        self.request.sendall(struct.pack("<H", len(packet)) + packet)
+                                packet = msgpack.packb((2, result), use_bin_type=True)
+                        self.request.sendall(struct.pack("<L", len(packet)) + packet)
+                    except self.EndConnection:
+                        return
                     except socket.error as e:
                         logger.error(e)
                         return

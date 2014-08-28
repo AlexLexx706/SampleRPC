@@ -13,7 +13,7 @@ class Client:
             self.client = client
             self.name = name
         def __call__(self, *args):
-            return self.client.send_cmd(self.name, args)
+            return self.client.send_cmd(self.name, *args)
 
     def __init__(self, host, port):
         self.host = host
@@ -28,11 +28,11 @@ class Client:
         return res_buffer
 
     def send_cmd(self, cmd, *data):
-        buffer = msgpack.packb((cmd, data))
-        buffer = struct.pack("<H", len(buffer)) + buffer
+        buffer = msgpack.packb((cmd, data), use_bin_type=True)
+        buffer = struct.pack("<L", len(buffer)) + buffer
         self.sock.sendall(buffer)
-        size = struct.unpack("<H", self.read(2))[0]
-        res = msgpack.unpackb(self.read(size))
+        size = struct.unpack("<L", self.read(4))[0]
+        res = msgpack.unpackb(self.read(size), encoding='utf-8')
         
         if res[0] != 0:
             raise self.ProtocolException(res[1])

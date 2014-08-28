@@ -5,8 +5,8 @@ import logging
 from tcp_rpc.server import ThreadedTCPServer
 
 class Test:
-    def dummy(self):
-        return 1
+    def dummy(self, data):
+        return data
 
 logging.basicConfig(level=100, format="%(asctime)s %(levelname)s proc:%(process)d %(filename)s::%(funcName)s %(message)s") 
 #1. создали сервак

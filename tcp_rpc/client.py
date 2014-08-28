@@ -7,6 +7,14 @@ import struct
 class Client:
     class ProtocolException(Exception):
         pass
+
+    class Method:
+        def __init__(self, client, name):
+            self.client = client
+            self.name = name
+        def __call__(self, *args):
+            return self.client.send_cmd(self.name, args)
+
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -19,7 +27,7 @@ class Client:
             res_buffer += self.sock.recv(size - len(res_buffer))
         return res_buffer
 
-    def send_cmd(self, cmd, data=()):
+    def send_cmd(self, cmd, *data):
         buffer = msgpack.packb((cmd, data))
         buffer = struct.pack("<H", len(buffer)) + buffer
         self.sock.sendall(buffer)
@@ -30,6 +38,9 @@ class Client:
             raise self.ProtocolException(res[1])
         return res[1]
     
+    def __getattr__(self, name):
+        return self.Method(self, name)
+
     def close(self):
         self.sock.close()
 

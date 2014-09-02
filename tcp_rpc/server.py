@@ -15,8 +15,6 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
         class EndConnection(Exception): pass
         
         def read(self, size):
-            logger.debug("(size:{})".format(size))
-            
             res_buffer = ""
             while len(res_buffer) < size:
                 b = self.request.recv(size - len(res_buffer))

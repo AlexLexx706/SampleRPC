@@ -18,11 +18,21 @@ class Client:
         def __call__(self, *args):
             return self.client.send_cmd(self.name, *args)
 
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
+    def __init__(self, host, port=None):
+        if port is None:
+            if isinstance(host, str):
+                params = host.split(":")
+                self.host = params[0]
+                self.port = int(params[1])
+            else:
+                self.host = host[0]
+                self.port = int(host[1])
+        else:
+            self.host = host
+            self.port = port
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((host, port))
+        self.sock.connect((self.host, self.port))
     
     def read(self, size):
         res_buffer = ""

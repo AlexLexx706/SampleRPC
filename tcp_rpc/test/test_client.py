@@ -10,7 +10,9 @@ count = 0
 data = " " *  8000
 
 while 1:
-    c = Client("localhost", 8000)
+    #c = Client("localhost", 8000)
+    #c = Client(("localhost", 8000))
+    c = Client("localhost:8000")
     c.dummy(data)
     c.close()
     dt =  time.time() - st

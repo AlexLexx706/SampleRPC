@@ -15,6 +15,8 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
         class EndConnection(Exception): pass
         
         def read(self, size):
+            logger.debug("(size:{})".format(size))
+            
             res_buffer = ""
             while len(res_buffer) < size:
                 b = self.request.recv(size - len(res_buffer))
@@ -25,7 +27,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
             
         def handle(self):
             try:
-                logger.debug("handle(self:{}) ->".format(self))
+                logger.debug("(self:{}) ->".format(self))
                 while 1:
                     try:
                         buffer = self.read(4)
@@ -52,6 +54,8 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
                 
    
     def __init__(self, host, instance):
+        #поставим ограничение подключений в 100000
+        self.request_queue_size = 100000
         SocketServer.TCPServer.__init__(self, host, self.MyTCPHandler)
         self.instance = instance
         

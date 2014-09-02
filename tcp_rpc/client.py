@@ -3,6 +3,9 @@
 import socket
 import msgpack
 import struct 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Client:
     class ProtocolException(Exception):
@@ -32,6 +35,7 @@ class Client:
         buffer = struct.pack("<L", len(buffer)) + buffer
         self.sock.sendall(buffer)
         size = struct.unpack("<L", self.read(4))[0]
+        
         res = msgpack.unpackb(self.read(size), encoding='utf-8')
         
         if res[0] != 0:

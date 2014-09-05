@@ -8,5 +8,5 @@ setup(name='SampleRPC',
       author='AlexLexx',
       author_email='AlexLexx1@gmail.com',
       url='https://github.com/AlexLexx706',
-      packages=['tcp_rpc', 'tcp_rpc.test']
+      packages=['tcp_rpc']
      )

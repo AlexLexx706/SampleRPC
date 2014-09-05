@@ -21,6 +21,9 @@ class Client:
     def __init__(self, host, port=None):
         if port is None:
             if isinstance(host, str):
+                host = host.replace("http://", "")
+                host = host.replace("https://", "")
+
                 params = host.split(":")
                 self.host = params[0]
                 self.port = int(params[1])

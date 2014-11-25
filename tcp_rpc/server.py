@@ -6,6 +6,7 @@ import struct
 import socket
 import logging
 import traceback
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +31,23 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
                     try:
                         buffer = self.read(4)
                         size = struct.unpack("<L", buffer)[0]
-                        cmd, params = msgpack.unpackb(self.read(size), encoding='utf-8')
 
-                        if self.server.instance is None:
-                            packet = msgpack.packb((1, params))
-                        else:
-                            try:
+                        try:
+                            if self.server.serialization == "json":
+                                cmd, params = json.loads(self.read(size))
+
+                                if params is not None:
+                                    packet = json.dumps(getattr(self.server.instance, cmd)(params))
+                                else:
+                                    packet = json.dumps(getattr(self.server.instance, cmd)())
+                            else:
+                                cmd, params = msgpack.unpackb(self.read(size), encoding='utf-8')
                                 packet = msgpack.packb((0, getattr(self.server.instance, cmd)(*params)), use_bin_type=True)
-                            except:
-                                result = traceback.format_exc()
-                                logger.error(result)
-                                packet = msgpack.packb((2, result), use_bin_type=True)
+                        except:
+                            result = traceback.format_exc()
+                            logger.error(result)
+                            packet = msgpack.packb((2, result), use_bin_type=True)
+
                         self.request.sendall(struct.pack("<L", len(packet)) + packet)
                     except self.EndConnection:
                         return
@@ -50,12 +57,12 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
             finally:
                 logger.debug("handle(self:{}) <-".format(self))
                 
-   
-    def __init__(self, host, instance):
+    def __init__(self, host, instance, serialization="msgpack"):
         #поставим ограничение подключений в 100000
         self.request_queue_size = 100000
         SocketServer.TCPServer.__init__(self, host, self.MyTCPHandler)
         self.instance = instance
+        self.serialization=serialization
         
 
 if __name__ == "__main__":

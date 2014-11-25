@@ -4,6 +4,7 @@ import socket
 import msgpack
 import struct 
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class Client:
         def __call__(self, *args):
             return self.client.send_cmd(self.name, *args)
 
-    def __init__(self, host, port=None):
+    def __init__(self, host, port=None, serialization="msgpack"):
         if port is None:
             if isinstance(host, str):
                 host = host.replace("http://", "")
@@ -33,7 +34,8 @@ class Client:
         else:
             self.host = host
             self.port = port
-
+        
+        self.serialization = serialization
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.host, self.port))
     
@@ -44,16 +46,22 @@ class Client:
         return res_buffer
 
     def send_cmd(self, cmd, *data):
-        buffer = msgpack.packb((cmd, data), use_bin_type=True)
+        if self.serialization == "msgpack":
+            buffer = msgpack.packb((cmd, data), use_bin_type=True)
+        else:
+            buffer = json.dumps((cmd, data))
+            
         buffer = struct.pack("<L", len(buffer)) + buffer
         self.sock.sendall(buffer)
         size = struct.unpack("<L", self.read(4))[0]
         
-        res = msgpack.unpackb(self.read(size), encoding='utf-8')
-        
-        if res[0] != 0:
-            raise self.ProtocolException(res[1])
-        return res[1]
+        if self.serialization == "msgpack":
+            res = msgpack.unpackb(self.read(size), encoding='utf-8')
+            if res[0] != 0:
+                raise self.ProtocolException(res[1])
+            return res[1]
+        else:
+            return json.loads(self.read(size))
     
     def __getattr__(self, name):
         return self.Method(self, name)
